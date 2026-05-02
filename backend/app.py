@@ -61,6 +61,11 @@ def init():
 def state():
     return jsonify(world)
 
+# ---------------- HEALTH ----------------
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"}), 200
+
 # ---------------- MOVE ----------------
 @app.route("/move", methods=["POST"])
 def move():
