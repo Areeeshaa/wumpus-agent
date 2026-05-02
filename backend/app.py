@@ -1,110 +1,29 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import random
+from wumpus import create_world, step_agent, get_state
 
 app = Flask(__name__)
 CORS(app)
 
-world = {}
+world = None
 
-# ---------------- CREATE WORLD ----------------
-def create_world(n, m):
-    grid = [[{
-        "pit": False,
-        "wumpus": False,
-        "revealed": False,
-        "breeze": False,
-        "stench": False
-    } for _ in range(m)] for _ in range(n)]
-
-    # random pits
-    for i in range(n):
-        for j in range(m):
-            if (i, j) != (0, 0) and random.random() < 0.2:
-                grid[i][j]["pit"] = True
-
-    # wumpus
-    wx, wy = random.randint(0, n-1), random.randint(0, m-1)
-    if (wx, wy) != (0, 0):
-        grid[wx][wy]["wumpus"] = True
-
-    # percepts
-    dirs = [(1,0),(-1,0),(0,1),(0,-1)]
-    for i in range(n):
-        for j in range(m):
-            for dx, dy in dirs:
-                ni, nj = i+dx, j+dy
-                if 0 <= ni < n and 0 <= nj < m:
-                    if grid[ni][nj]["pit"]:
-                        grid[i][j]["breeze"] = True
-                    if grid[ni][nj]["wumpus"]:
-                        grid[i][j]["stench"] = True
-
-    return {
-        "grid": grid,
-        "agent": {"x": 0, "y": 0},
-        "steps": 0,
-        "percepts": [],
-        "gameOver": False
-    }
-
-# ---------------- INIT ----------------
-@app.route("/init", methods=["POST"])
+@app.route('/init', methods=['POST'])
 def init():
     global world
     data = request.json
-    world = create_world(data["rows"], data["cols"])
-    return jsonify(world)
+    rows = data.get("rows", 4)
+    cols = data.get("cols", 4)
+    world = create_world(rows, cols)
+    return jsonify({"message": "World initialized"})
 
-# ---------------- STATE ----------------
-@app.route("/state")
+@app.route('/state', methods=['GET'])
 def state():
-    return jsonify(world)
+    return jsonify(get_state(world))
 
-# ---------------- HEALTH ----------------
-@app.route("/health")
-def health():
-    return jsonify({"status": "ok"}), 200
+@app.route('/step', methods=['POST'])
+def step():
+    step_agent(world)
+    return jsonify(get_state(world))
 
-# ---------------- MOVE ----------------
-@app.route("/move", methods=["POST"])
-def move():
-    global world
-
-    if world.get("gameOver"):
-        return jsonify(world)
-
-    data = request.json
-    x, y = data["x"], data["y"]
-
-    ax, ay = world["agent"]["x"], world["agent"]["y"]
-
-    if abs(ax - x) + abs(ay - y) != 1:
-        return jsonify(world)
-
-    world["agent"]["x"], world["agent"]["y"] = x, y
-    cell = world["grid"][x][y]
-
-    world["steps"] += 1
-    world["percepts"] = []
-
-    cell["revealed"] = True
-
-    if cell["breeze"]:
-        world["percepts"].append("Breeze")
-    if cell["stench"]:
-        world["percepts"].append("Stench")
-
-    if cell["pit"] or cell["wumpus"]:
-        world["gameOver"] = True
-
-    return jsonify(world)
-
-# ---------------- ROOT ----------------
-@app.route("/")
-def home():
-    return "Wumpus Backend Running"
-
-# ---------------- RUN ----------------
-if __name__ == "__main__":
-    app.run()
+if __name__ == '__main__':
+    app.run(debug=True)
