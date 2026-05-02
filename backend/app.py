@@ -7,6 +7,11 @@ CORS(app)
 
 world = {}
 
+# ---------------- ROOT ----------------
+@app.route("/")
+def index():
+    return jsonify({"status": "ok", "message": "Wumpus Game API is running"})
+
 # ---------------- CREATE WORLD ----------------
 def create_world(n, m):
     grid = [[{
