@@ -70,7 +70,8 @@ def health():
 @app.route("/move", methods=["POST"])
 def move():
     global world
-    if world["gameOver"]:
+
+    if world.get("gameOver"):
         return jsonify(world)
 
     data = request.json
@@ -78,7 +79,6 @@ def move():
 
     ax, ay = world["agent"]["x"], world["agent"]["y"]
 
-    # adjacency check
     if abs(ax - x) + abs(ay - y) != 1:
         return jsonify(world)
 
@@ -88,7 +88,6 @@ def move():
     world["steps"] += 1
     world["percepts"] = []
 
-    # reveal cell
     cell["revealed"] = True
 
     if cell["breeze"]:
@@ -96,11 +95,16 @@ def move():
     if cell["stench"]:
         world["percepts"].append("Stench")
 
-    # GAME OVER conditions
     if cell["pit"] or cell["wumpus"]:
         world["gameOver"] = True
 
     return jsonify(world)
 
+# ---------------- ROOT ----------------
+@app.route("/")
+def home():
+    return "Wumpus Backend Running"
+
+# ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run()
