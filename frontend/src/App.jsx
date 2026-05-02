@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Grid from "./components/Grid";
 
-const API = "http://127.0.0.1:5000";
+const API = "https://wumpus-agent-production.up.railway.app/";
 
 export default function App() {
   const [grid, setGrid] = useState([]);
